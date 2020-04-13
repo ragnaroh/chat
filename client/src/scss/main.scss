@@ -1,0 +1,27 @@
+
+$fa-font-path: '~@fortawesome/fontawesome-free/webfonts';
+@import '~@fortawesome/fontawesome-free/scss/fontawesome.scss';
+@import '~@fortawesome/fontawesome-free/scss/solid.scss';
+
+@import '~bulma/sass/utilities/all';
+@import '~bulma/sass/base/all';
+@import '~bulma/sass/elements/all';
+@import '~bulma/sass/form/all';
+@import '~bulma/sass/components/all';
+@import '~bulma/sass/grid/all';
+@import '~bulma/sass/layout/all';
+
+@import 'game';
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+html {
+    overflow: hidden;
+}
+
+// .field .field {
+//   margin-bottom: 0;
+// }

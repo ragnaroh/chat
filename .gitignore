@@ -1,0 +1,6 @@
+.flattened-pom.xml
+
+### Eclipse ###
+.settings/
+.classpath
+.project

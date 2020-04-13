@@ -1,0 +1,38 @@
+$menu-invert-background: $info;
+$menu-invert-hover-background: darken($menu-invert-background, 2.5%);
+
+.left-menu {
+    background-color: $menu-invert-background;
+    .menu-label {
+      color: findColorInvert( $menu-invert-background );
+    }
+    .menu-list span {
+        border-radius: $menu-item-radius;
+        color: findColorInvert( $menu-invert-background );
+        display: block;
+        padding: 0.5em 0.75em;
+        &:hover {
+          background-color: $menu-invert-hover-background;
+          color: findColorInvert($menu-invert-hover-background);
+        }
+        // Modifiers
+        &.is-active {
+          background-color: $menu-item-active-background-color;
+          color: $menu-item-active-color;
+        }
+    }
+    .menu-item {
+      color: findColorInvert( $menu-invert-background );
+    }
+}
+
+#message-history article.media {
+    padding: 1rem;
+    margin-top: 0;
+    &:first-child {
+        border-top: 1px solid rgba($border, 0.5);
+    }
+    &.media:hover {
+        background-color: $light;
+    }
+}

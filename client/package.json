@@ -1,0 +1,39 @@
+{
+  "name": "chat",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "repository": "git@github.com:ragnaroh/chat.git",
+  "author": "ragnaroh@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "5.13.0",
+    "@fortawesome/free-solid-svg-icons": "5.13.0",
+    "bulma": "0.8.2",
+    "elm": "0.19.1-3",
+    "sass": "1.26.3",
+    "sockjs-client": "1.4.0",
+    "webstomp-client": "1.2.6"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "5.1.1",
+    "css-loader": "3.5.2",
+    "elm-hot-webpack-loader": "1.1.6",
+    "elm-webpack-loader": "6.0.1",
+    "file-loader": "6.0.0",
+    "html-webpack-plugin": "4.2.0",
+    "mini-css-extract-plugin": "0.9.0",
+    "node-sass": "4.13.1",
+    "optimize-css-assets-webpack-plugin": "5.0.3",
+    "sass-loader": "8.0.2",
+    "style-loader": "1.1.4",
+    "url-loader": "4.1.0",
+    "webpack": "4.42.1",
+    "webpack-cli": "3.3.11",
+    "webpack-dev-server": "3.10.3"
+  },
+  "scripts": {
+    "clean": "rm -rf node_modules elm-stuff build",
+    "dev": "./node_modules/.bin/webpack-dev-server",
+    "build": "./node_modules/.bin/webpack --mode=production"
+  }
+}
