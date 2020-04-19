@@ -11,7 +11,7 @@ $fa-font-path: '~@fortawesome/fontawesome-free/webfonts';
 @import '~bulma/sass/grid/all';
 @import '~bulma/sass/layout/all';
 
-@import 'game';
+@import 'room';
 
 html, body {
     height: 100%;
@@ -21,7 +21,3 @@ html, body {
 html {
     overflow: hidden;
 }
-
-// .field .field {
-//   margin-bottom: 0;
-// }
