@@ -16,6 +16,8 @@ public class RoomSubscriptionHelper {
 
    @Autowired
    private RoomService roomService;
+   @Autowired
+   private StompTemplate stompTemplate;
 
    public void onSubscribe(String subscriptionId, String userId, String roomId) {
       subscriptions.put(subscriptionId, Pair.of(roomId, userId));
@@ -24,7 +26,10 @@ public class RoomSubscriptionHelper {
    public void onUnsubscribe(String subscriptionId) {
       var pair = subscriptions.remove(subscriptionId);
       if (pair != null) {
-         roomService.removeUser(pair.getLeft(), pair.getRight());
+         String roomId = pair.getLeft();
+         var event = roomService.removeUser(roomId, pair.getRight());
+         stompTemplate.sendToRoom(roomId, RoomStompMessage.event(event));
+         stompTemplate.sendToRoom(roomId, RoomStompMessage.users(roomService.getActiveUsers(roomId)));
       }
    }
 

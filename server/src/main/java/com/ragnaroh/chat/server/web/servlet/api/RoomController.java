@@ -46,33 +46,13 @@ public class RoomController {
 
    @GetMapping("room/{id}/username")
    public String getUsernameInRoom(@PathVariable("id") String roomId, HttpSession session) {
-      String username = roomService.getRoomUsername(roomId, session.getId());
+      String username = roomService.getUsername(roomId, session.getId());
       return username == null ? "" : username;
    }
 
    @PostMapping("room/{id}/enter")
    public boolean enterRoom(@PathVariable("id") String roomId, @RequestBody String username, HttpSession session) {
       return roomService.addUser(roomId, session.getId(), username);
-   }
-
-   public static final class InputError {
-
-      private final String field;
-      private final String message;
-
-      public InputError(String field, String message) {
-         this.field = field;
-         this.message = message;
-      }
-
-      public String getField() {
-         return field;
-      }
-
-      public String getMessage() {
-         return message;
-      }
-
    }
 
 }

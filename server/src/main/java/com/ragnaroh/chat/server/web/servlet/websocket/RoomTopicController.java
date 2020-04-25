@@ -12,7 +12,6 @@ import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
 
 import com.ragnaroh.chat.server.services.RoomService;
-import com.ragnaroh.chat.server.services.RoomServiceImpl.RoomUpdate;
 
 @Controller
 public class RoomTopicController {
@@ -21,42 +20,27 @@ public class RoomTopicController {
    private RoomService roomService;
    @Autowired
    private RoomSubscriptionHelper roomSubscriptionHelper;
+   @Autowired
+   private StompTemplate stompTemplate;
 
    @SubscribeMapping("/room/{id}")
-   public RoomUpdate onSubscribe(@DestinationVariable("id") String id,
-                                 @Header("id") String subscriptionId,
-                                 Principal principal) {
+   public RoomStompMessage onSubscribe(@DestinationVariable("id") String id,
+                                       @Header("id") String subscriptionId,
+                                       Principal principal) {
       roomSubscriptionHelper.onSubscribe(subscriptionId, principal.getName(), id);
-      return roomService.updateSubscriptionStatusToActive(id, principal.getName());
+      var event = roomService.activateUser(id, principal.getName());
+      stompTemplate.sendToRoom(id, RoomStompMessage.event(event));
+      stompTemplate.sendToRoom(id, RoomStompMessage.users(roomService.getActiveUsers(id)));
+      var room = roomService.getRoom(id);
+      return RoomStompMessage.initialData(room.getActiveUsers(), room.getEvents());
    }
 
    @MessageMapping("/room/{id}/message")
    @SendTo("/topic/room/{id}")
-   public RoomUpdate message(@DestinationVariable("id") String roomId, @Payload String message, Principal principal) {
-      return roomService.addMessage(roomId, principal.getName(), message);
-   }
-
-   public static final class InMessage {
-
-      private String text;
-      private String user;
-
-      public String getText() {
-         return text;
-      }
-
-      public void setText(String text) {
-         this.text = text;
-      }
-
-      public String getUser() {
-         return user;
-      }
-
-      public void setUser(String user) {
-         this.user = user;
-      }
-
+   public RoomStompMessage message(@DestinationVariable("id") String roomId,
+                                   @Payload String message,
+                                   Principal principal) {
+      return RoomStompMessage.event(roomService.addMessage(roomId, principal.getName(), message));
    }
 
 }

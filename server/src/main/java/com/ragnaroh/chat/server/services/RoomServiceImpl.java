@@ -11,7 +11,6 @@ import static java.util.stream.Collectors.toList;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ragnaroh.chat.server.common.Holder;
@@ -34,9 +32,6 @@ public class RoomServiceImpl implements RoomService {
    private static final String VALID_NAME_REGEX = "[\\p{Alnum}_\\- ]+";
 
    private final Map<String, Room> rooms = new ConcurrentHashMap<>();
-
-   @Autowired
-   private StompTemplate stompTemplate;
 
    @Override
    public String createRoom(String name) {
@@ -69,6 +64,11 @@ public class RoomServiceImpl implements RoomService {
    }
 
    @Override
+   public List<String> getActiveUsers(String roomId) {
+      return getRoom(roomId).getActiveUsers();
+   }
+
+   @Override
    public boolean addUser(String roomId, String userId, String username) {
       requireInputNotNull("roomId", roomId);
       requireInputNotNull("userId", userId);
@@ -95,20 +95,12 @@ public class RoomServiceImpl implements RoomService {
 
    @Override
    public boolean userExists(String roomId, String userId) {
-      Room room = rooms.get(roomId);
-      if (room == null) {
-         throwRoomNotFoundException(roomId);
-      }
-      return room.users.containsKey(userId);
+      return getRoom(roomId).users.containsKey(userId);
    }
 
    @Override
-   public String getRoomUsername(String roomId, String userId) {
-      Room room = rooms.get(roomId);
-      if (room == null) {
-         throwRoomNotFoundException(roomId);
-      }
-      RoomUser user = room.users.get(userId);
+   public String getUsername(String roomId, String userId) {
+      RoomUser user = getRoom(roomId).users.get(userId);
       if (user == null) {
          return null;
       }
@@ -116,8 +108,8 @@ public class RoomServiceImpl implements RoomService {
    }
 
    @Override
-   public RoomUpdate updateSubscriptionStatusToActive(String roomId, String userId) {
-      var holder = new Holder<RoomUpdate>();
+   public SequencedRoomEvent activateUser(String roomId, String userId) {
+      var holder = new Holder<SequencedRoomEvent>();
       Room room = rooms.computeIfPresent(roomId, (rid, r) -> {
          RoomUser user = r.users.get(userId);
          if (user == null) {
@@ -126,10 +118,8 @@ public class RoomServiceImpl implements RoomService {
          if (user.getSubscriptionStatus() != SubscriptionStatus.ACTIVE) {
             r.users.put(userId, new RoomUser(user.id, user.username, SubscriptionStatus.ACTIVE));
             UserEnter event = new UserEnter(LocalDateTime.now(), user.getName());
-            publishEvent(roomId, r.addEvent(event));
+            holder.set(r.addEvent(event));
          }
-         publishUsers(rid, r.getSubscribingUsers());
-         holder.set(RoomUpdate.initialData(r.getSubscribingUsers(), r.getEvents()));
          return r;
       });
       if (room == null) {
@@ -139,20 +129,21 @@ public class RoomServiceImpl implements RoomService {
    }
 
    @Override
-   public void removeUser(String roomId, String userId) {
+   public SequencedRoomEvent removeUser(String roomId, String userId) {
+      var holder = new Holder<SequencedRoomEvent>();
       Room room = rooms.computeIfPresent(roomId, (i, r) -> {
          RoomUser user = r.users.remove(userId);
          if (user == null) {
             throw new NotFoundException("User with id <{}> is not in room with id <{}>.", userId, roomId);
          }
          UserLeave event = new UserLeave(LocalDateTime.now(), user.getName());
-         publishEvent(roomId, r.addEvent(event));
-         publishUsers(roomId, r.getSubscribingUsers());
+         holder.set(r.addEvent(event));
          return r;
       });
       if (room == null) {
          throwRoomNotFoundException(roomId);
       }
+      return holder.get();
    }
 
    private static void throwRoomNotFoundException(String roomId) {
@@ -160,19 +151,20 @@ public class RoomServiceImpl implements RoomService {
    }
 
    @Override
-   public void removeUserFromAllRooms(String userId) {
+   public Map<String, SequencedRoomEvent> removeUserFromAllRooms(String userId) {
+      var result = new HashMap<String, SequencedRoomEvent>();
       rooms.forEach((i, r) -> {
          RoomUser user = r.users.remove(userId);
          if (user != null && user.getSubscriptionStatus() == SubscriptionStatus.ACTIVE) {
             UserLeave event = new UserLeave(LocalDateTime.now(), user.getName());
-            publishEvent(i, r.addEvent(event));
-            publishUsers(i, r.getSubscribingUsers());
+            result.put(i, r.addEvent(event));
          }
       });
+      return result;
    }
 
    @Override
-   public RoomUpdate addMessage(String roomId, String userId, String text) {
+   public SequencedRoomEvent addMessage(String roomId, String userId, String text) {
       var holder = new Holder<SequencedRoomEvent>();
       var room = rooms.computeIfPresent(roomId, (i, r) -> {
          RoomUser user = r.users.get(userId);
@@ -183,81 +175,7 @@ public class RoomServiceImpl implements RoomService {
       if (room == null) {
          throwRoomNotFoundException(roomId);
       }
-      return RoomUpdate.event(holder.get());
-   }
-
-   private void publishEvent(String roomId, SequencedRoomEvent event) {
-      publishUpdate(roomId, RoomUpdate.event(event));
-   }
-
-   private void publishUsers(String roomId, Collection<String> users) {
-      publishUpdate(roomId, RoomUpdate.users(users));
-   }
-
-   private void publishUpdate(String roomId, RoomUpdate object) {
-      stompTemplate.send("/topic/room/" + roomId, object);
-   }
-
-   public static final class RoomUpdate {
-
-      public enum Type {
-         INITIAL_DATA,
-         EVENT,
-         USERS;
-      }
-
-      private final Type type;
-      private final Object object;
-
-      private static RoomUpdate event(SequencedRoomEvent event) {
-         return new RoomUpdate(Type.EVENT, requireNonNull(event));
-      }
-
-      private static RoomUpdate users(Collection<String> users) {
-         return new RoomUpdate(Type.USERS, sorted(requireNonNull(users)));
-      }
-
-      private static RoomUpdate initialData(Collection<String> users, List<SequencedRoomEvent> events) {
-         return new RoomUpdate(Type.INITIAL_DATA, Map.of("users", users, "events", events));
-      }
-
-      private RoomUpdate(Type type, Object object) {
-         this.type = requireNonNull(type);
-         this.object = object;
-      }
-
-      public Type getType() {
-         return type;
-      }
-
-      public Object getObject() {
-         return object;
-      }
-
-      private static <T> List<T> sorted(Collection<T> collection) {
-         return collection.stream().sorted().collect(toList());
-      }
-
-   }
-
-   public static final class SequencedRoomEvent implements Serializable {
-
-      private final int sequenceNumber;
-      private final RoomEvent event;
-
-      private SequencedRoomEvent(int sequenceNumber, RoomEvent event) {
-         this.sequenceNumber = sequenceNumber;
-         this.event = event;
-      }
-
-      public int getSequenceNumber() {
-         return sequenceNumber;
-      }
-
-      public RoomEvent getEvent() {
-         return event;
-      }
-
+      return holder.get();
    }
 
    public static final class Room implements Serializable {
@@ -288,7 +206,7 @@ public class RoomServiceImpl implements RoomService {
          return sequencedEvent;
       }
 
-      public List<String> getSubscribingUsers() {
+      public List<String> getActiveUsers() {
          return unmodifiableList(users
                .values()
                .stream()
@@ -303,7 +221,7 @@ public class RoomServiceImpl implements RoomService {
 
    }
 
-   public static final class RoomUser {
+   public static final class RoomUser implements Serializable {
 
       public enum SubscriptionStatus {
          PENDING,
@@ -330,6 +248,26 @@ public class RoomServiceImpl implements RoomService {
 
       public SubscriptionStatus getSubscriptionStatus() {
          return subscriptionStatus;
+      }
+
+   }
+
+   public static final class SequencedRoomEvent implements Serializable {
+
+      private final int sequenceNumber;
+      private final RoomEvent event;
+
+      private SequencedRoomEvent(int sequenceNumber, RoomEvent event) {
+         this.sequenceNumber = sequenceNumber;
+         this.event = event;
+      }
+
+      public int getSequenceNumber() {
+         return sequenceNumber;
+      }
+
+      public RoomEvent getEvent() {
+         return event;
       }
 
    }
