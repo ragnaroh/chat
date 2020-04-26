@@ -41,7 +41,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | PagesMsg Pages.Msg
-    | ReceivedWebSocketTopicMessage String JD.Value
+    | ReceivedWebSocketMessage String JD.Value
 
 
 
@@ -144,10 +144,10 @@ updateMain msg model =
             , Cmd.map PagesMsg cmd
             )
 
-        ReceivedWebSocketTopicMessage topic payload ->
+        ReceivedWebSocketMessage destination payload ->
             ( model
             , Pages.wsSubscriptions model.pagesModel model.context
-                |> WebSocketSub.msgs topic payload
+                |> WebSocketSub.msgs destination payload
                 |> List.map toCmd
                 |> List.map (Cmd.map PagesMsg)
                 |> Cmd.batch
@@ -157,7 +157,7 @@ updateMain msg model =
 refreshWebSocktSubscriptionsCmd : Pages.Model -> Context -> Cmd Msg
 refreshWebSocktSubscriptionsCmd pagesModel context =
     Pages.wsSubscriptions pagesModel context
-        |> WebSocketSub.topics
+        |> WebSocketSub.destinations
         |> Ports.refreshWebSocketSubscriptions
 
 
@@ -207,12 +207,12 @@ webSocketInputToMsg value =
     let
         decoder =
             JD.succeed Tuple.pair
-                |> JDP.required "topic" JD.string
+                |> JDP.required "destination" JD.string
                 |> JDP.required "payload" JD.value
     in
     case JD.decodeValue decoder value of
-        Ok ( topic, payload ) ->
-            ReceivedWebSocketTopicMessage topic payload
+        Ok ( destination, payload ) ->
+            ReceivedWebSocketMessage destination payload
 
         Err _ ->
             NoOp

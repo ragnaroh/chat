@@ -11,10 +11,10 @@ const subscriptions = {};
 
 establishWebSocketConnection('/ws/stomp', client => {
     const app = Elm.Main.init({ flags : { appPath, apiPath }});
-    app.ports.refreshWebSocketSubscriptions.subscribe(topics => {
-        refreshWebSocketSubscriptions(topics, subscriptions, client, (topic, payload) => {
+    app.ports.refreshWebSocketSubscriptions.subscribe(destinations => {
+        refreshWebSocketSubscriptions(destinations, subscriptions, client, (destination, payload) => {
             app.ports.webSocketMessageIn.send({
-                topic: topic,
+                destination: destination,
                 payload: payload
             });
         });
@@ -22,12 +22,13 @@ establishWebSocketConnection('/ws/stomp', client => {
     app.ports.roomMessageOut.subscribe(data => {
         client.send('/app/room/' + data.roomId + '/message', data.text);
     });
+    app.ports.leaveRoom.subscribe(roomId => {
+        client.send('/app/room/' + roomId + '/part');
+    });
 }, function(errorEvent) {
     if (errorEvent['type'] === 'close' && errorEvent['code'] === 1006) {
         // Lost connection to server
-        for (const topic in subscriptions) {
-            unsubscribe(topic, subscriptions);
-        }
+        window.location.href = appPath;
     }
 });
 
@@ -39,28 +40,28 @@ function establishWebSocketConnection(url, onConnect, onError) {
     }, onError);
 }
 
-function refreshWebSocketSubscriptions(topics, subs, client, onMessage) {
-    const topicSet = new Set(topics);
-    for (const topic in subs) {
-        if (!topicSet.has(topic)) {
-            unsubscribe(topic, subs);
+function refreshWebSocketSubscriptions(destinations, subs, client, onMessage) {
+    const destinationSet = new Set(destinations);
+    for (const destination in subs) {
+        if (!destinationSet.has(destination)) {
+            unsubscribe(destination, subs);
         }
     }
-    for (const topic of topics) {
-        if (!(topic in subs)) {
-            subscribe(topic, subs, client, onMessage);
+    for (const destination of destinations) {
+        if (!(destination in subs)) {
+            subscribe(destination, subs, client, onMessage);
         }
     }
 }
 
-function unsubscribe(topic, subs) {
-    var subscription = subs[topic];
-    delete subs[topic];
+function unsubscribe(destination, subs) {
+    var subscription = subs[destination];
+    delete subs[destination];
     subscription.unsubscribe();
 }
 
-function subscribe(topic, subs, client, onMessage) {
-    subs[topic] = client.subscribe('/topic/' + topic, data => {
-        onMessage(topic, JSON.parse(data.body));
+function subscribe(destination, subs, client, onMessage) {
+    subs[destination] = client.subscribe(destination, data => {
+        onMessage(destination, JSON.parse(data.body));
     });
 }

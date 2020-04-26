@@ -15,8 +15,8 @@ public class WebSocketUnsubscribeListener implements ApplicationListener<Session
    @Override
    public void onApplicationEvent(SessionUnsubscribeEvent event) {
       var headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-      String subscriptionId = headerAccessor.getFirstNativeHeader("id");
-      subscriptionHelper.onUnsubscribe(subscriptionId);
+      String subscriptionId = headerAccessor.getSubscriptionId();
+      subscriptionHelper.onUnsubscribe(event.getUser().getName(), headerAccessor.getSessionId(), subscriptionId);
    }
 
 }

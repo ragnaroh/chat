@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import com.ragnaroh.chat.server.services.RoomServiceImpl.SequencedRoomEvent;
+import com.ragnaroh.chat.server.services.model.room.event.Event;
 
 public final class RoomStompMessage {
 
@@ -25,7 +25,7 @@ public final class RoomStompMessage {
       this.object = object;
    }
 
-   public static RoomStompMessage event(SequencedRoomEvent event) {
+   public static RoomStompMessage event(Event event) {
       return new RoomStompMessage(Type.EVENT, requireNonNull(event));
    }
 
@@ -33,7 +33,7 @@ public final class RoomStompMessage {
       return new RoomStompMessage(Type.USERS, sorted(requireNonNull(users)));
    }
 
-   public static RoomStompMessage initialData(List<String> users, List<SequencedRoomEvent> events) {
+   public static RoomStompMessage initialData(List<String> users, List<Event> events) {
       return new RoomStompMessage(Type.INITIAL_DATA, Map.of("users", users, "events", events));
    }
 

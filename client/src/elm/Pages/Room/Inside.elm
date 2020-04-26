@@ -8,6 +8,7 @@ module Pages.Room.Inside exposing
     )
 
 import Browser.Dom
+import Browser.Navigation
 import Context exposing (Context)
 import DateTime exposing (DateTime)
 import Dict exposing (Dict)
@@ -26,8 +27,7 @@ import WebSocketSub exposing (WebSocketSub)
 
 
 type alias Model =
-    { username : Username
-    , users : List String
+    { users : List String
     , events : Dict Int Event
     , messageInput : String
     }
@@ -51,6 +51,8 @@ type Msg
     | SetMessageInput String
     | SendMessage
     | ReceiveTopicMessage (Result JD.Error TopicMessage)
+    | ReceiveQueueMessage (Result JD.Error QueueMessage)
+    | LeaveRoom
 
 
 type TopicMessage
@@ -59,14 +61,17 @@ type TopicMessage
     | UsersTopicMessage (List String)
 
 
+type QueueMessage
+    = LeaveRoomQueueMessage
+
+
 
 -- INIT
 
 
-init : Username -> ( Model, Cmd Msg )
-init username =
-    ( { username = username
-      , users = []
+init : ( Model, Cmd Msg )
+init =
+    ( { users = []
       , events = Dict.empty
       , messageInput = ""
       }
@@ -79,7 +84,7 @@ init username =
 
 
 update : Msg -> Model -> RoomId -> Context -> ( Model, Cmd Msg )
-update msg model roomId _ =
+update msg model roomId context =
     case msg of
         NoOp ->
             ( model, Cmd.none )
@@ -120,6 +125,17 @@ update msg model roomId _ =
         ReceiveTopicMessage (Err _) ->
             ( model, Cmd.none )
 
+        ReceiveQueueMessage (Ok LeaveRoomQueueMessage) ->
+            ( model, Browser.Navigation.pushUrl context.navKey context.appPath )
+
+        ReceiveQueueMessage (Err _) ->
+            ( model, Cmd.none )
+
+        LeaveRoom ->
+            ( model
+            , Ports.leaveRoom (roomIdToJson roomId)
+            )
+
 
 encodeDataToJs : RoomId -> String -> JE.Value
 encodeDataToJs (RoomId roomId) message =
@@ -136,17 +152,29 @@ jumpToBottom id =
         |> Task.attempt (\_ -> NoOp)
 
 
+roomIdToJson : RoomId -> JE.Value
+roomIdToJson (RoomId roomId) =
+    JE.string roomId
+
+
 
 -- WEBSOCKET
 
 
 wsSubscriptions : Model -> RoomId -> WebSocketSub Msg
 wsSubscriptions _ (RoomId roomId) =
-    WebSocketSub.sub
-        { topic = "room/" ++ roomId
-        , msg = ReceiveTopicMessage
-        , decoder = topicMessageDecoder
-        }
+    WebSocketSub.batch
+        [ WebSocketSub.sub
+            { destination = "/topic/room/" ++ roomId
+            , msg = ReceiveTopicMessage
+            , decoder = topicMessageDecoder
+            }
+        , WebSocketSub.sub
+            { destination = "/user/queue/room/" ++ roomId
+            , msg = ReceiveQueueMessage
+            , decoder = queueMessageDecoder
+            }
+        ]
 
 
 topicMessageDecoder : JD.Decoder TopicMessage
@@ -183,31 +211,45 @@ seqNumAndEventDecoder : JD.Decoder ( Int, Event )
 seqNumAndEventDecoder =
     JD.succeed Tuple.pair
         |> JDP.required "sequenceNumber" JD.int
-        |> JDP.required "event" eventDecoder
+        |> JDP.custom eventDecoder
 
 
 eventDecoder : JD.Decoder Event
 eventDecoder =
     JD.succeed Event
-        |> JDP.required "time" DateTime.decoder
+        |> JDP.required "timestamp" DateTime.decoder
         |> JDP.required "username" JD.string
         |> JDP.custom (JD.field "type" JD.string |> JD.andThen eventContentDecoder)
 
 
 eventContentDecoder : String -> JD.Decoder EventContent
-eventContentDecoder type_ =
-    case type_ of
+eventContentDecoder eventType =
+    case eventType of
         "MESSAGE" ->
             JD.field "text" JD.string |> JD.andThen (JD.succeed << Message)
 
-        "USER_ENTERS" ->
+        "JOINED" ->
             JD.succeed UserEnters
 
-        "USER_LEAVES" ->
+        "PARTED" ->
             JD.succeed UserLeaves
 
-        other ->
-            JD.fail ("Unsupported event type: " ++ other)
+        _ ->
+            JD.fail ("Unsupported event type: " ++ eventType)
+
+
+queueMessageDecoder : JD.Decoder QueueMessage
+queueMessageDecoder =
+    JD.field "type" JD.string
+        |> JD.andThen
+            (\messageType ->
+                case messageType of
+                    "LEAVE" ->
+                        JD.succeed LeaveRoomQueueMessage
+
+                    _ ->
+                        JD.fail ("Unsupported message type: " ++ messageType)
+            )
 
 
 
@@ -235,9 +277,11 @@ view model _ context =
                     (List.map viewUserItem model.users)
                 ]
             , H.div [ HA.style "flex" "0 1 auto" ]
-                [ H.a
+                [ H.button
                     [ HA.class "button is-info is-fullwidth"
-                    , HA.href context.appPath
+                    , HE.onClick LeaveRoom
+
+                    -- , HA.href context.appPath
                     ]
                     [ H.span [ HA.class "icon" ]
                         [ H.i [ HA.class "fas fa-sign-out-alt fa-flip-horizontal" ] [] ]

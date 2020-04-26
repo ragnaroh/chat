@@ -1,5 +1,6 @@
 port module Ports exposing
-    ( refreshWebSocketSubscriptions
+    ( leaveRoom
+    , refreshWebSocketSubscriptions
     , roomMessageOut
     , webSocketMessageIn
     )
@@ -9,6 +10,9 @@ import Json.Encode as JE
 
 
 port roomMessageOut : JE.Value -> Cmd msg
+
+
+port leaveRoom : JE.Value -> Cmd msg
 
 
 port webSocketMessageIn : (JD.Value -> msg) -> Sub msg

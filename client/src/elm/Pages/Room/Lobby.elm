@@ -31,7 +31,7 @@ type Msg
     = NoOp
     | SetUsernameInput String
     | CreateEnterRoomRequest
-    | ReceiveEnterRoomResponse Username (Result Http.Error Bool)
+    | ReceiveEnterRoomResponse (Result Http.Error Bool)
 
 
 type alias Route =
@@ -39,7 +39,7 @@ type alias Route =
 
 
 type UpdateResult
-    = EnterRoom Username
+    = EnterRoom
     | ModelAndCmd Model (Cmd Msg)
     | None
 
@@ -73,13 +73,13 @@ update msg model roomId context =
             ModelAndCmd { model | usernameTaken = False }
                 (enterRoomCmd roomId model.usernameInput context)
 
-        ReceiveEnterRoomResponse username (Ok True) ->
-            EnterRoom username
+        ReceiveEnterRoomResponse (Ok True) ->
+            EnterRoom
 
-        ReceiveEnterRoomResponse _ (Ok False) ->
+        ReceiveEnterRoomResponse (Ok False) ->
             ModelAndCmd { model | usernameTaken = True } Cmd.none
 
-        ReceiveEnterRoomResponse _ (Err _) ->
+        ReceiveEnterRoomResponse (Err _) ->
             None
 
 
@@ -88,10 +88,7 @@ enterRoomCmd (RoomId roomId) username context =
     Http.post
         { url = context.apiPath ++ "/room/" ++ roomId ++ "/enter"
         , body = Http.jsonBody (JE.string username)
-        , expect =
-            Http.expectJson
-                (ReceiveEnterRoomResponse (Username username))
-                JD.bool
+        , expect = Http.expectJson ReceiveEnterRoomResponse JD.bool
         }
 
 

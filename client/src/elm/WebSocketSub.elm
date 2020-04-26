@@ -1,4 +1,4 @@
-module WebSocketSub exposing (WebSocketSub, batch, map, msgs, none, sub, topics)
+module WebSocketSub exposing (WebSocketSub, batch, destinations, map, msgs, none, sub)
 
 import Json.Decode as JD
 
@@ -8,7 +8,7 @@ type WebSocketSub msg
 
 
 type alias Subscription msg =
-    { topic : String
+    { destination : String
     , msg : JD.Value -> msg
     }
 
@@ -19,14 +19,14 @@ none =
 
 
 sub :
-    { topic : String
+    { destination : String
     , msg : Result JD.Error a -> msg
     , decoder : JD.Decoder a
     }
     -> WebSocketSub msg
-sub { topic, msg, decoder } =
+sub { destination, msg, decoder } =
     Subscriptions
-        [ { topic = topic
+        [ { destination = destination
           , msg = JD.decodeValue decoder >> msg
           }
         ]
@@ -37,7 +37,7 @@ map f (Subscriptions subs) =
     subs
         |> List.map
             (\a ->
-                { topic = a.topic
+                { destination = a.destination
                 , msg = a.msg >> f
                 }
             )
@@ -56,13 +56,13 @@ batch list =
         |> Subscriptions
 
 
-topics : WebSocketSub msg -> List String
-topics (Subscriptions subs) =
-    List.map .topic subs
+destinations : WebSocketSub msg -> List String
+destinations (Subscriptions subs) =
+    List.map .destination subs
 
 
 msgs : String -> JD.Value -> WebSocketSub msg -> List msg
-msgs topic value (Subscriptions subs) =
+msgs destination value (Subscriptions subs) =
     subs
-        |> List.filter (\a -> a.topic == topic)
+        |> List.filter (\a -> a.destination == destination)
         |> List.map (\a -> a.msg value)

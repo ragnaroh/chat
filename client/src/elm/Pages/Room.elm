@@ -29,7 +29,7 @@ type alias Model =
 
 
 type SubModel
-    = Initializing (Maybe RoomName) (Maybe (Maybe Username))
+    = Initializing (Maybe RoomName) (Maybe Bool)
     | LobbyModel RoomName Lobby.Model
     | InsideModel RoomName Inside.Model
 
@@ -38,7 +38,7 @@ type Msg
     = LobbyMsg Lobby.Msg
     | InsideMsg Inside.Msg
     | ReceiveRoomName (Result Http.Error RoomName)
-    | ReceiveUsername (Result Http.Error (Maybe Username))
+    | ReceiveEnterRoomResponse (Result Http.Error Bool)
 
 
 type alias Route =
@@ -60,7 +60,7 @@ init route context =
       }
     , Cmd.batch
         [ fetchRoomNameCmd roomId context
-        , fetchUsernameCmd roomId context
+        , tryEnterRoomCmd roomId context
         ]
     )
 
@@ -73,13 +73,12 @@ fetchRoomNameCmd (RoomId roomId) context =
         }
 
 
-fetchUsernameCmd : RoomId -> Context -> Cmd Msg
-fetchUsernameCmd (RoomId roomId) context =
-    Http.get
-        { url = context.apiPath ++ "/room/" ++ roomId ++ "/username"
-        , expect =
-            Http.expectJson ReceiveUsername
-                (JD.string |> JD.map (String.Extra.nonEmpty >> Maybe.map Username))
+tryEnterRoomCmd : RoomId -> Context -> Cmd Msg
+tryEnterRoomCmd (RoomId roomId) context =
+    Http.post
+        { url = context.apiPath ++ "/room/" ++ roomId ++ "/try-enter"
+        , body = Http.emptyBody
+        , expect = Http.expectJson ReceiveEnterRoomResponse JD.bool
         }
 
 
@@ -108,26 +107,26 @@ updateSub msg model roomId context =
         ( ReceiveRoomName (Ok roomName), Initializing Nothing Nothing ) ->
             ( Initializing (Just roomName) Nothing, Cmd.none )
 
-        ( ReceiveRoomName (Ok roomName), Initializing Nothing (Just Nothing) ) ->
+        ( ReceiveRoomName (Ok roomName), Initializing Nothing (Just False) ) ->
             Lobby.init
                 |> Tuple.mapFirst (LobbyModel roomName)
                 |> Tuple.mapSecond (Cmd.map LobbyMsg)
 
-        ( ReceiveRoomName (Ok roomName), Initializing Nothing (Just (Just username)) ) ->
-            Inside.init username
+        ( ReceiveRoomName (Ok roomName), Initializing Nothing (Just True) ) ->
+            Inside.init
                 |> Tuple.mapFirst (InsideModel roomName)
                 |> Tuple.mapSecond (Cmd.map InsideMsg)
 
-        ( ReceiveUsername (Ok maybeUsername), Initializing Nothing Nothing ) ->
-            ( Initializing Nothing (Just maybeUsername), Cmd.none )
+        ( ReceiveEnterRoomResponse (Ok userExists), Initializing Nothing Nothing ) ->
+            ( Initializing Nothing (Just userExists), Cmd.none )
 
-        ( ReceiveUsername (Ok Nothing), Initializing (Just roomName) Nothing ) ->
+        ( ReceiveEnterRoomResponse (Ok False), Initializing (Just roomName) Nothing ) ->
             Lobby.init
                 |> Tuple.mapFirst (LobbyModel roomName)
                 |> Tuple.mapSecond (Cmd.map LobbyMsg)
 
-        ( ReceiveUsername (Ok (Just username)), Initializing (Just roomName) Nothing ) ->
-            Inside.init username
+        ( ReceiveEnterRoomResponse (Ok True), Initializing (Just roomName) Nothing ) ->
+            Inside.init
                 |> Tuple.mapFirst (InsideModel roomName)
                 |> Tuple.mapSecond (Cmd.map InsideMsg)
 
@@ -138,8 +137,8 @@ updateSub msg model roomId context =
                     , Cmd.map LobbyMsg cmd
                     )
 
-                Lobby.EnterRoom username ->
-                    Inside.init username
+                Lobby.EnterRoom ->
+                    Inside.init
                         |> Tuple.mapFirst (InsideModel roomName)
                         |> Tuple.mapSecond (Cmd.map InsideMsg)
 

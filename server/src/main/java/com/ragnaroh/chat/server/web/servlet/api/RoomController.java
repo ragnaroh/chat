@@ -44,10 +44,9 @@ public class RoomController {
       return roomService.getRoom(roomId).getName();
    }
 
-   @GetMapping("room/{id}/username")
-   public String getUsernameInRoom(@PathVariable("id") String roomId, HttpSession session) {
-      String username = roomService.getUsername(roomId, session.getId());
-      return username == null ? "" : username;
+   @PostMapping("room/{id}/try-enter")
+   public boolean tryEnterRoom(@PathVariable("id") String roomId, HttpSession session) {
+      return roomService.readdUser(roomId, session.getId());
    }
 
    @PostMapping("room/{id}/enter")
