@@ -1,4 +1,12 @@
-module Api exposing (Endpoint, createRoom, enterRoom, getRoomName, request, tryEnterRoom)
+module Api exposing
+    ( Endpoint
+    , createRoom
+    , enterRoom
+    , getRoomName
+    , getRooms
+    , request
+    , tryEnterRoom
+    )
 
 import Context exposing (Context)
 import Http
@@ -10,6 +18,11 @@ import Pages.Room.Common exposing (RoomId(..))
 type Endpoint
     = Get String
     | Post String Http.Body
+
+
+getRooms : Endpoint
+getRooms =
+    Get "/rooms"
 
 
 getRoomName : RoomId -> Endpoint

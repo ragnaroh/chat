@@ -18,6 +18,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.ragnaroh.chat.server.common.exceptions.IllegalInputException;
 import com.ragnaroh.chat.server.common.exceptions.NotFoundException;
 import com.ragnaroh.chat.server.services.model.room.Room;
+import com.ragnaroh.chat.server.services.model.room.RoomLite;
 import com.ragnaroh.chat.server.services.model.room.event.Event;
 
 @Service
@@ -33,6 +34,11 @@ public class RoomServiceImpl implements RoomService {
    private TransactionTemplate transactionTemplate;
    @Autowired
    private UserDao userDao;
+
+   @Override
+   public List<RoomLite> getRoomsLite() {
+      return roomDao.fetchRoomsLite();
+   }
 
    @Override
    public String createRoom(String name) {

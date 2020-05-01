@@ -10,9 +10,13 @@ module Pages.JoinRoom exposing
     , wsSubscriptions
     )
 
+import Api
 import Context exposing (Context)
 import Html as H exposing (Html)
 import Html.Attributes as HA
+import Http
+import Json.Decode as JD
+import Json.Decode.Pipeline as JDP
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
 
@@ -22,11 +26,18 @@ import WebSocketSub exposing (WebSocketSub)
 
 
 type alias Model =
-    ()
+    { rooms : Maybe (Result Http.Error (List Room)) }
 
 
-type alias Msg =
-    ()
+type alias Room =
+    { id : String
+    , name : String
+    , users : Int
+    }
+
+
+type Msg
+    = ReceiveRooms (Result Http.Error (List Room))
 
 
 type alias Route =
@@ -38,8 +49,26 @@ type alias Route =
 
 
 init : Route -> Context -> ( Model, Cmd Msg )
-init _ _ =
-    ( (), Cmd.none )
+init _ context =
+    ( Model Nothing, fetchRoomsCmd context )
+
+
+fetchRoomsCmd : Context -> Cmd Msg
+fetchRoomsCmd context =
+    Api.request
+        { endpoint = Api.getRooms
+        , context = context
+        , msg = ReceiveRooms
+        , decoder = JD.list roomDecoder
+        }
+
+
+roomDecoder : JD.Decoder Room
+roomDecoder =
+    JD.succeed Room
+        |> JDP.required "id" JD.string
+        |> JDP.required "name" JD.string
+        |> JDP.required "users" JD.int
 
 
 
@@ -56,8 +85,12 @@ urlParser =
 
 
 update : Msg -> Model -> Context -> ( Model, Cmd Msg )
-update _ model _ =
-    ( model, Cmd.none )
+update msg _ _ =
+    case msg of
+        ReceiveRooms result ->
+            ( Model (Just result)
+            , Cmd.none
+            )
 
 
 
@@ -83,7 +116,7 @@ wsSubscriptions _ _ =
 
 
 view : Model -> Context -> List (Html Msg)
-view _ _ =
+view model context =
     [ H.div [ HA.class "hero is-info has-text-centered" ]
         [ H.div [ HA.class "hero-body" ]
             [ H.div [ HA.class "container" ]
@@ -96,8 +129,52 @@ view _ _ =
         [ H.div [ HA.class "columns is-centered" ]
             [ H.div
                 [ HA.class "column is-two-thirds-tablet is-half-desktop is-two-fifths-widescreen is-one-third-fullhd" ]
-                [ H.text "To be implemented"
+                [ viewRoomsPanel context model.rooms
                 ]
             ]
         ]
     ]
+
+
+viewRoomsPanel : Context -> Maybe (Result Http.Error (List Room)) -> Html msg
+viewRoomsPanel context maybeRooms =
+    H.nav [ HA.class "panel is-info" ]
+        [ H.p [ HA.class "panel-heading" ]
+            [ H.text "Rooms" ]
+        , H.div [ HA.style "max-height" "500px", HA.style "overflow-y" "auto" ] <|
+            case maybeRooms of
+                Just (Ok rooms) ->
+                    viewRoomPanelBlocks context rooms
+
+                Just (Err _) ->
+                    [ H.text "Could not load rooms" ]
+
+                Nothing ->
+                    [ H.span [ HA.class "icon" ]
+                        [ H.i [ HA.class "fas fa-spinner fa-spin" ] [] ]
+                    ]
+        ]
+
+
+viewRoomPanelBlocks : Context -> List Room -> List (Html msg)
+viewRoomPanelBlocks context rooms =
+    if List.isEmpty rooms then
+        [ H.text "There are no existing rooms" ]
+
+    else
+        List.map (viewRoomPanelBlock context) rooms
+
+
+viewRoomPanelBlock : Context -> Room -> Html msg
+viewRoomPanelBlock context room =
+    H.a [ HA.class "panel-block", HA.href (context.appPath ++ "/room/" ++ room.id) ]
+        [ H.div [ HA.class "column" ]
+            [ H.span [ HA.class "is-pulled-left" ]
+                [ H.text room.name ]
+            , H.span [ HA.class "is-pulled-right" ]
+                [ H.span [ HA.class "icon", HA.style "margin-right" "0.5em" ]
+                    [ H.i [ HA.class "fas fa-users" ] [] ]
+                , H.text (String.fromInt room.users)
+                ]
+            ]
+        ]

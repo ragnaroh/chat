@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import com.ragnaroh.chat.server.services.model.room.Room;
 import com.ragnaroh.chat.server.services.model.room.Room.User.Status;
+import com.ragnaroh.chat.server.services.model.room.RoomLite;
 import com.ragnaroh.chat.server.services.model.room.event.Event;
 
 @Repository
@@ -18,6 +19,22 @@ public class RoomDao extends Dao {
 
    @Autowired
    private UserDao userDao;
+
+   List<RoomLite> fetchRoomsLite() {
+      return query("""
+            SELECT r.ID, r.NAME, COUNT(*) AS USERS FROM Room r, RoomUser ru
+            WHERE r.KEY = ru.ROOM_KEY
+              AND ru.STATUS = :active
+            GROUP BY r.ID, r.NAME
+            """,
+                   Map.of("active", Room.User.Status.ACTIVE.name()),
+                   rs -> RoomLite
+                         .builder()
+                         .id(rs.getString("ID"))
+                         .name(rs.getString("NAME"))
+                         .users(rs.getInt("USERS"))
+                         .build());
+   }
 
    int insertRoom(String id, String name) {
       return updateAndReturnId("""

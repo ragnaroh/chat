@@ -3,6 +3,7 @@ package com.ragnaroh.chat.server.services;
 import java.util.List;
 
 import com.ragnaroh.chat.server.services.model.room.Room;
+import com.ragnaroh.chat.server.services.model.room.RoomLite;
 import com.ragnaroh.chat.server.services.model.room.event.Event;
 
 public interface RoomService {
@@ -24,5 +25,7 @@ public interface RoomService {
    public Event deactivateUser(String roomId, String userId);
 
    public Event addMessage(String roomId, String userId, String text);
+
+   public List<RoomLite> getRoomsLite();
 
 }
