@@ -8,6 +8,7 @@ module Pages.Room.Lobby exposing
     , view
     )
 
+import Api
 import Browser.Dom
 import Context exposing (Context)
 import Form
@@ -16,7 +17,6 @@ import Html.Attributes as HA
 import Html.Events as HE
 import Http
 import Json.Decode as JD
-import Json.Encode as JE
 import Pages.Room.Common exposing (RoomId(..), RoomName(..), Username(..))
 import Task
 
@@ -84,11 +84,12 @@ update msg model roomId context =
 
 
 enterRoomCmd : RoomId -> String -> Context -> Cmd Msg
-enterRoomCmd (RoomId roomId) username context =
-    Http.post
-        { url = context.apiPath ++ "/rooms/" ++ roomId ++ "/enter"
-        , body = Http.jsonBody (JE.string username)
-        , expect = Http.expectJson ReceiveEnterRoomResponse JD.bool
+enterRoomCmd roomId username context =
+    Api.request
+        { endpoint = Api.enterRoom roomId username
+        , context = context
+        , msg = ReceiveEnterRoomResponse
+        , decoder = JD.bool
         }
 
 

@@ -10,6 +10,7 @@ module Pages.Room exposing
     , wsSubscriptions
     )
 
+import Api
 import Context exposing (Context)
 import Html as H exposing (Html)
 import Http
@@ -17,7 +18,6 @@ import Json.Decode as JD
 import Pages.Room.Common exposing (RoomId(..), RoomName(..), Username(..))
 import Pages.Room.Inside as Inside
 import Pages.Room.Lobby as Lobby
-import String.Extra
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
 
@@ -66,19 +66,22 @@ init route context =
 
 
 fetchRoomNameCmd : RoomId -> Context -> Cmd Msg
-fetchRoomNameCmd (RoomId roomId) context =
-    Http.get
-        { url = context.apiPath ++ "/rooms/" ++ roomId ++ "/name"
-        , expect = Http.expectJson ReceiveRoomName (JD.string |> JD.map RoomName)
+fetchRoomNameCmd roomId context =
+    Api.request
+        { endpoint = Api.getRoomName roomId
+        , context = context
+        , msg = ReceiveRoomName
+        , decoder = JD.string |> JD.map RoomName
         }
 
 
 tryEnterRoomCmd : RoomId -> Context -> Cmd Msg
-tryEnterRoomCmd (RoomId roomId) context =
-    Http.post
-        { url = context.apiPath ++ "/rooms/" ++ roomId ++ "/try-enter"
-        , body = Http.emptyBody
-        , expect = Http.expectJson ReceiveEnterRoomResponse JD.bool
+tryEnterRoomCmd roomId context =
+    Api.request
+        { endpoint = Api.tryEnterRoom roomId
+        , context = context
+        , msg = ReceiveEnterRoomResponse
+        , decoder = JD.bool
         }
 
 

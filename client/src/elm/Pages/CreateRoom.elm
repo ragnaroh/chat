@@ -10,6 +10,7 @@ module Pages.CreateRoom exposing
     , wsSubscriptions
     )
 
+import Api
 import Browser.Dom
 import Browser.Navigation as Nav
 import Context exposing (Context)
@@ -19,7 +20,6 @@ import Html.Attributes as HA
 import Html.Events as HE
 import Http
 import Json.Decode as JD
-import Json.Encode as JE
 import Task
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
@@ -84,10 +84,11 @@ update msg model context =
 
 createRoomCmd : String -> Context -> Cmd Msg
 createRoomCmd name context =
-    Http.post
-        { url = context.apiPath ++ "/rooms/create"
-        , body = Http.jsonBody (JE.string name)
-        , expect = Http.expectJson ReceiveRegisterRoomResponse JD.string
+    Api.request
+        { endpoint = Api.createRoom name
+        , context = context
+        , msg = ReceiveRegisterRoomResponse
+        , decoder = JD.string
         }
 
 
