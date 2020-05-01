@@ -68,7 +68,7 @@ init route context =
 fetchRoomNameCmd : RoomId -> Context -> Cmd Msg
 fetchRoomNameCmd (RoomId roomId) context =
     Http.get
-        { url = context.apiPath ++ "/room/" ++ roomId ++ "/name"
+        { url = context.apiPath ++ "/rooms/" ++ roomId ++ "/name"
         , expect = Http.expectJson ReceiveRoomName (JD.string |> JD.map RoomName)
         }
 
@@ -76,7 +76,7 @@ fetchRoomNameCmd (RoomId roomId) context =
 tryEnterRoomCmd : RoomId -> Context -> Cmd Msg
 tryEnterRoomCmd (RoomId roomId) context =
     Http.post
-        { url = context.apiPath ++ "/room/" ++ roomId ++ "/try-enter"
+        { url = context.apiPath ++ "/rooms/" ++ roomId ++ "/try-enter"
         , body = Http.emptyBody
         , expect = Http.expectJson ReceiveEnterRoomResponse JD.bool
         }

@@ -70,7 +70,7 @@ update msg model context =
         CreateRoom ->
             -- TODO: validate room name
             ( { model | roomNameInput = String.trim model.roomNameInput }
-            , registerRoomCmd model.roomNameInput context
+            , createRoomCmd model.roomNameInput context
             )
 
         ReceiveRegisterRoomResponse (Ok roomId) ->
@@ -82,10 +82,10 @@ update msg model context =
             ( model, Cmd.none )
 
 
-registerRoomCmd : String -> Context -> Cmd Msg
-registerRoomCmd name context =
+createRoomCmd : String -> Context -> Cmd Msg
+createRoomCmd name context =
     Http.post
-        { url = context.apiPath ++ "/room"
+        { url = context.apiPath ++ "/rooms/create"
         , body = Http.jsonBody (JE.string name)
         , expect = Http.expectJson ReceiveRegisterRoomResponse JD.string
         }

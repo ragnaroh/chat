@@ -86,7 +86,7 @@ update msg model roomId context =
 enterRoomCmd : RoomId -> String -> Context -> Cmd Msg
 enterRoomCmd (RoomId roomId) username context =
     Http.post
-        { url = context.apiPath ++ "/room/" ++ roomId ++ "/enter"
+        { url = context.apiPath ++ "/rooms/" ++ roomId ++ "/enter"
         , body = Http.jsonBody (JE.string username)
         , expect = Http.expectJson ReceiveEnterRoomResponse JD.bool
         }
