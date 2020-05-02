@@ -172,7 +172,7 @@ toCmd msg =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Chat "
+    { title = "Chat"
     , body =
         case model of
             InvalidFlags ->

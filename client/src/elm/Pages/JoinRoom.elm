@@ -147,11 +147,15 @@ viewRoomsPanel context maybeRooms =
                     viewRoomPanelBlocks context rooms
 
                 Just (Err _) ->
-                    [ H.text "Could not load rooms" ]
+                    [ H.div [ HA.class "column" ]
+                        [ H.text "Could not load rooms" ]
+                    ]
 
                 Nothing ->
-                    [ H.span [ HA.class "icon" ]
-                        [ H.i [ HA.class "fas fa-spinner fa-spin" ] [] ]
+                    [ H.div [ HA.class "column has-text-centered" ]
+                        [ H.span [ HA.class "icon" ]
+                            [ H.i [ HA.class "fas fa-spinner fa-spin" ] [] ]
+                        ]
                     ]
         ]
 
@@ -159,7 +163,9 @@ viewRoomsPanel context maybeRooms =
 viewRoomPanelBlocks : Context -> List Room -> List (Html msg)
 viewRoomPanelBlocks context rooms =
     if List.isEmpty rooms then
-        [ H.text "There are no existing rooms" ]
+        [ H.div [ HA.class "column" ]
+            [ H.text "There are no existing rooms" ]
+        ]
 
     else
         List.map (viewRoomPanelBlock context) rooms

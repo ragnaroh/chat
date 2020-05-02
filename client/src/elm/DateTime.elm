@@ -21,16 +21,9 @@ decoder : JD.Decoder DateTime
 decoder =
     JD.list JD.int
         |> JD.andThen
-            (\list ->
-                toDateTime list
-                    |> Maybe.map JD.succeed
-                    |> Maybe.withDefault
-                        (list
-                            |> List.map String.fromInt
-                            |> String.join ","
-                            |> (++) "Could not decode datetime: "
-                            |> JD.fail
-                        )
+            (toDateTime
+                >> Maybe.map JD.succeed
+                >> Maybe.withDefault (JD.fail "Invalid datetime received")
             )
 
 

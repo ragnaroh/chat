@@ -15,6 +15,10 @@ import Json.Encode as JE
 import Pages.Room.Common exposing (RoomId(..))
 
 
+
+-- ENDPOINTS
+
+
 type Endpoint
     = Get String
     | Post String Http.Body
@@ -43,6 +47,10 @@ tryEnterRoom (RoomId roomId) =
 enterRoom : RoomId -> String -> Endpoint
 enterRoom (RoomId roomId) username =
     Post ("/rooms/" ++ roomId ++ "/enter") (Http.jsonBody (JE.string username))
+
+
+
+-- REQUESTS
 
 
 request :

@@ -148,8 +148,8 @@ encodeDataToJs (RoomId roomId) message =
 jumpToBottom : String -> Cmd Msg
 jumpToBottom id =
     Browser.Dom.getViewportOf id
-        |> Task.andThen (\info -> Browser.Dom.setViewportOf id 0 info.scene.height)
-        |> Task.attempt (\_ -> NoOp)
+        |> Task.andThen (.scene >> .height >> Browser.Dom.setViewportOf id 0)
+        |> Task.attempt (always NoOp)
 
 
 roomIdToJson : RoomId -> JE.Value
@@ -280,8 +280,6 @@ view model _ context =
                 [ H.button
                     [ HA.class "button is-info is-fullwidth"
                     , HE.onClick LeaveRoom
-
-                    -- , HA.href context.appPath
                     ]
                     [ H.span [ HA.class "icon" ]
                         [ H.i [ HA.class "fas fa-sign-out-alt fa-flip-horizontal" ] [] ]
@@ -317,6 +315,7 @@ view model _ context =
                     , HA.autofocus True
                     , HE.onInput SetMessageInput
                     , HA.value model.messageInput
+                    , HA.autocomplete False
                     ]
                     []
                 ]
