@@ -147,7 +147,6 @@ view model _ =
                             , HA.placeholder "Room name"
                             , HE.onInput SetRoomNameInput
                             , HA.value model.roomNameInput
-                            , HA.autofocus True
                             , Form.onEnter CreateRoom
                             ]
                             []

@@ -122,7 +122,6 @@ view model (RoomName roomName) _ =
                             , HA.placeholder "Username"
                             , HE.onInput SetUsernameInput
                             , HA.value model.usernameInput
-                            , HA.autofocus True
                             ]
                             []
                         ]

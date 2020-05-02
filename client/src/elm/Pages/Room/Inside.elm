@@ -312,7 +312,6 @@ view model _ context =
                     [ HA.id messageInputId
                     , HA.class "input"
                     , HA.type_ "text"
-                    , HA.autofocus True
                     , HE.onInput SetMessageInput
                     , HA.value model.messageInput
                     , HA.autocomplete False
