@@ -13,6 +13,7 @@ module Pages.Home exposing
 import Context exposing (Context)
 import Html as H exposing (Html)
 import Html.Attributes as HA
+import Navigation
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
 
@@ -90,17 +91,17 @@ view _ context =
         ]
     , H.section [ HA.class "section" ]
         [ H.div [ HA.class "columns is-centered" ]
-            [ viewButtonColumn (context.appPath ++ "/create") "Create room"
-            , viewButtonColumn (context.appPath ++ "/join") "Join room"
+            [ viewButtonColumn context Navigation.create "Create room"
+            , viewButtonColumn context Navigation.join "Join room"
             ]
         ]
     ]
 
 
-viewButtonColumn : String -> String -> Html msg
-viewButtonColumn href text =
+viewButtonColumn : Context -> Navigation.Path -> String -> Html msg
+viewButtonColumn context path text =
     H.div
         [ HA.class "column is-one-third-tablet is-one-quarter-desktop is-one-fifth-widescreen" ]
-        [ H.a [ HA.class "button is-large is-info is-fullwidth", HA.href href ]
+        [ H.a [ HA.class "button is-large is-info is-fullwidth", Navigation.href context path ]
             [ H.text text ]
         ]

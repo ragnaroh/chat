@@ -20,6 +20,8 @@ import Html.Attributes as HA
 import Html.Events as HE
 import Http
 import Json.Decode as JD
+import Navigation
+import Pages.Room.Common exposing (RoomId(..))
 import Task
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
@@ -34,7 +36,7 @@ type Msg
     = NoOp
     | SetRoomNameInput String
     | CreateRoom
-    | ReceiveRegisterRoomResponse (Result Http.Error String)
+    | ReceiveRegisterRoomResponse (Result Http.Error RoomId)
 
 
 type alias Route =
@@ -75,7 +77,7 @@ update msg model context =
 
         ReceiveRegisterRoomResponse (Ok roomId) ->
             ( model
-            , Nav.pushUrl context.navKey (context.appPath ++ "/room/" ++ roomId)
+            , Navigation.room roomId |> Navigation.pushUrl context
             )
 
         ReceiveRegisterRoomResponse (Err _) ->
@@ -88,7 +90,7 @@ createRoomCmd name context =
         { endpoint = Api.createRoom name
         , context = context
         , msg = ReceiveRegisterRoomResponse
-        , decoder = JD.string
+        , decoder = JD.string |> JD.map RoomId
         }
 
 

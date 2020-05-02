@@ -17,6 +17,8 @@ import Html.Attributes as HA
 import Http
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
+import Navigation
+import Pages.Room.Common exposing (RoomId(..))
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
 
@@ -30,7 +32,7 @@ type alias Model =
 
 
 type alias Room =
-    { id : String
+    { id : RoomId
     , name : String
     , users : Int
     }
@@ -66,7 +68,7 @@ fetchRoomsCmd context =
 roomDecoder : JD.Decoder Room
 roomDecoder =
     JD.succeed Room
-        |> JDP.required "id" JD.string
+        |> JDP.required "id" (JD.string |> JD.map RoomId)
         |> JDP.required "name" JD.string
         |> JDP.required "users" JD.int
 
@@ -173,7 +175,7 @@ viewRoomPanelBlocks context rooms =
 
 viewRoomPanelBlock : Context -> Room -> Html msg
 viewRoomPanelBlock context room =
-    H.a [ HA.class "panel-block", HA.href (context.appPath ++ "/room/" ++ room.id) ]
+    H.a [ HA.class "panel-block", Navigation.room room.id |> Navigation.href context ]
         [ H.div [ HA.class "column" ]
             [ H.span [ HA.class "is-pulled-left" ]
                 [ H.text room.name ]
