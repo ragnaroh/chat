@@ -32,6 +32,7 @@ type Model
 
 type alias MainModel =
     { context : Context
+    , connected : Bool
     , pagesModel : Pages.Model
     }
 
@@ -41,6 +42,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | PagesMsg Pages.Msg
+    | UpdateConnectionStatus Bool
     | ReceivedWebSocketMessage String JD.Value
 
 
@@ -64,12 +66,10 @@ init flags url navKey =
             in
             ( Model
                 { context = context
+                , connected = False
                 , pagesModel = pagesModel
                 }
-            , Cmd.batch
-                [ Cmd.map PagesMsg cmd
-                , refreshWebSocktSubscriptionsCmd pagesModel context
-                ]
+            , Cmd.map PagesMsg cmd
             )
 
         Err _ ->
@@ -107,7 +107,11 @@ update msg model =
             ( Model newModel
             , Cmd.batch
                 [ cmd
-                , refreshWebSocktSubscriptionsCmd newModel.pagesModel newModel.context
+                , if newModel.connected then
+                    refreshWebSocktSubscriptionsCmd newModel.pagesModel newModel.context
+
+                  else
+                    Cmd.none
                 ]
             )
 
@@ -142,6 +146,15 @@ updateMain msg model =
             in
             ( { model | pagesModel = newModel }
             , Cmd.map PagesMsg cmd
+            )
+
+        UpdateConnectionStatus connected ->
+            ( { model | connected = connected }
+            , if connected then
+                Cmd.none
+
+              else
+                Browser.Navigation.load model.context.appPath
             )
 
         ReceivedWebSocketMessage endpoint payload ->
@@ -198,8 +211,16 @@ subscriptions model =
             Sub.batch
                 [ Pages.subscriptions pagesModel context
                     |> Sub.map PagesMsg
+                , Ports.connectionStatusIn connectionStatusInputToMsg
                 , Ports.webSocketMessageIn webSocketInputToMsg
                 ]
+
+
+connectionStatusInputToMsg : JD.Value -> Msg
+connectionStatusInputToMsg value =
+    JD.decodeValue JD.bool value
+        |> Result.map UpdateConnectionStatus
+        |> Result.withDefault NoOp
 
 
 webSocketInputToMsg : JD.Value -> Msg

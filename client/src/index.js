@@ -1,67 +1,35 @@
 'use strict';
 
-import webstomp from 'webstomp-client';
-import SockJS from 'sockjs-client';
+import * as ws from './js/websockets.js';
 import { Elm } from './elm/Main.elm';
 
 const appPath = '/chat';
 const apiPath = '/api';
 
-const subscriptions = {};
+const app = Elm.Main.init({ flags : { appPath, apiPath }});
 
-establishWebSocketConnection('/ws/stomp', client => {
-    const app = Elm.Main.init({ flags : { appPath, apiPath }});
+function onWsConnect(sendMessage, refreshSubscriptions) {
+    app.ports.connectionStatusIn.send(true);
     app.ports.refreshWebSocketSubscriptions.subscribe(endpoints => {
-        refreshWebSocketSubscriptions(endpoints, subscriptions, client, (endpoint, payload) => {
-            app.ports.webSocketMessageIn.send({
-                endpoint: endpoint,
-                payload: payload
-            });
-        });
+        refreshSubscriptions(endpoints);
     });
     app.ports.roomMessageOut.subscribe(data => {
-        client.send('/app/room/' + data.roomId + '/message', data.text);
+        sendMessage('/app/room/' + data.roomId + '/message', data.text);
     });
     app.ports.leaveRoom.subscribe(roomId => {
-        client.send('/app/room/' + roomId + '/part');
+        sendMessage('/app/room/' + roomId + '/part');
     });
-}, function(errorEvent) {
+}
+
+function onWsMessage(endpoint, payload) {
+    app.ports.webSocketMessageIn.send({ endpoint, payload });
+}
+
+function onWsError(errorEvent) {
     if (errorEvent['type'] === 'close' && errorEvent['code'] === 1006) {
         // Lost connection to server
-        window.location.href = appPath;
-    }
-});
-
-function establishWebSocketConnection(url, onConnect, onError) {
-    var socket = new SockJS(url);
-    var client = webstomp.over(socket, { debug: false });
-    client.connect({}, () => {
-        onConnect(client);
-    }, onError);
-}
-
-function refreshWebSocketSubscriptions(endpoints, subs, client, onMessage) {
-    const endpointSet = new Set(endpoints);
-    for (const endpoint in subs) {
-        if (!endpointSet.has(endpoint)) {
-            unsubscribe(endpoint, subs);
-        }
-    }
-    for (const endpoint of endpoints) {
-        if (!(endpoint in subs)) {
-            subscribe(endpoint, subs, client, onMessage);
-        }
+        app.ports.connectionStatusIn.send(false);
     }
 }
 
-function unsubscribe(endpoint, subs) {
-    var subscription = subs[endpoint];
-    delete subs[endpoint];
-    subscription.unsubscribe();
-}
-
-function subscribe(endpoint, subs, client, onMessage) {
-    subs[endpoint] = client.subscribe(endpoint, data => {
-        onMessage(endpoint, JSON.parse(data.body));
-    });
-}
+ws.connect('/ws/stomp', onWsConnect, onWsMessage, onWsError);
