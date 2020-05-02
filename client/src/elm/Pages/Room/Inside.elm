@@ -162,15 +162,15 @@ roomIdToJson (RoomId roomId) =
 
 
 wsSubscriptions : Model -> RoomId -> WebSocketSub Msg
-wsSubscriptions _ (RoomId roomId) =
+wsSubscriptions _ roomId =
     WebSocketSub.batch
         [ WebSocketSub.sub
-            { destination = "/topic/room/" ++ roomId
+            { endpoint = WebSocketSub.roomTopic roomId
             , msg = ReceiveTopicMessage
             , decoder = topicMessageDecoder
             }
         , WebSocketSub.sub
-            { destination = "/user/queue/room/" ++ roomId
+            { endpoint = WebSocketSub.roomUserQueue roomId
             , msg = ReceiveQueueMessage
             , decoder = queueMessageDecoder
             }

@@ -11,10 +11,10 @@ const subscriptions = {};
 
 establishWebSocketConnection('/ws/stomp', client => {
     const app = Elm.Main.init({ flags : { appPath, apiPath }});
-    app.ports.refreshWebSocketSubscriptions.subscribe(destinations => {
-        refreshWebSocketSubscriptions(destinations, subscriptions, client, (destination, payload) => {
+    app.ports.refreshWebSocketSubscriptions.subscribe(endpoints => {
+        refreshWebSocketSubscriptions(endpoints, subscriptions, client, (endpoint, payload) => {
             app.ports.webSocketMessageIn.send({
-                destination: destination,
+                endpoint: endpoint,
                 payload: payload
             });
         });
@@ -40,28 +40,28 @@ function establishWebSocketConnection(url, onConnect, onError) {
     }, onError);
 }
 
-function refreshWebSocketSubscriptions(destinations, subs, client, onMessage) {
-    const destinationSet = new Set(destinations);
-    for (const destination in subs) {
-        if (!destinationSet.has(destination)) {
-            unsubscribe(destination, subs);
+function refreshWebSocketSubscriptions(endpoints, subs, client, onMessage) {
+    const endpointSet = new Set(endpoints);
+    for (const endpoint in subs) {
+        if (!endpointSet.has(endpoint)) {
+            unsubscribe(endpoint, subs);
         }
     }
-    for (const destination of destinations) {
-        if (!(destination in subs)) {
-            subscribe(destination, subs, client, onMessage);
+    for (const endpoint of endpoints) {
+        if (!(endpoint in subs)) {
+            subscribe(endpoint, subs, client, onMessage);
         }
     }
 }
 
-function unsubscribe(destination, subs) {
-    var subscription = subs[destination];
-    delete subs[destination];
+function unsubscribe(endpoint, subs) {
+    var subscription = subs[endpoint];
+    delete subs[endpoint];
     subscription.unsubscribe();
 }
 
-function subscribe(destination, subs, client, onMessage) {
-    subs[destination] = client.subscribe(destination, data => {
-        onMessage(destination, JSON.parse(data.body));
+function subscribe(endpoint, subs, client, onMessage) {
+    subs[endpoint] = client.subscribe(endpoint, data => {
+        onMessage(endpoint, JSON.parse(data.body));
     });
 }

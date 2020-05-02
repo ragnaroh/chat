@@ -144,10 +144,10 @@ updateMain msg model =
             , Cmd.map PagesMsg cmd
             )
 
-        ReceivedWebSocketMessage destination payload ->
+        ReceivedWebSocketMessage endpoint payload ->
             ( model
             , Pages.wsSubscriptions model.pagesModel model.context
-                |> WebSocketSub.msgs destination payload
+                |> WebSocketSub.msgs endpoint payload
                 |> List.map toCmd
                 |> List.map (Cmd.map PagesMsg)
                 |> Cmd.batch
@@ -157,7 +157,7 @@ updateMain msg model =
 refreshWebSocktSubscriptionsCmd : Pages.Model -> Context -> Cmd Msg
 refreshWebSocktSubscriptionsCmd pagesModel context =
     Pages.wsSubscriptions pagesModel context
-        |> WebSocketSub.destinations
+        |> WebSocketSub.endpoints
         |> Ports.refreshWebSocketSubscriptions
 
 
@@ -207,12 +207,12 @@ webSocketInputToMsg value =
     let
         decoder =
             JD.succeed Tuple.pair
-                |> JDP.required "destination" JD.string
+                |> JDP.required "endpoint" JD.string
                 |> JDP.required "payload" JD.value
     in
     case JD.decodeValue decoder value of
-        Ok ( destination, payload ) ->
-            ReceivedWebSocketMessage destination payload
+        Ok ( endpoint, payload ) ->
+            ReceivedWebSocketMessage endpoint payload
 
         Err _ ->
             NoOp
