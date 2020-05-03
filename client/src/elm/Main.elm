@@ -1,11 +1,13 @@
 module Main exposing (main)
 
+import Api
 import Browser
 import Browser.Navigation
 import Context exposing (Context)
 import Html as H
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
+import Navigation
 import Pages
 import Ports
 import Task
@@ -55,8 +57,14 @@ init flags url navKey =
     case JD.decodeValue flagsDecoder flags of
         Ok { appPath, apiPath } ->
             let
+                navContext =
+                    Navigation.context appPath navKey
+
+                apiContext =
+                    Api.context apiPath
+
                 context =
-                    Context appPath apiPath navKey
+                    Context navContext apiContext
 
                 route =
                     Pages.decodeUrl url context
@@ -125,7 +133,7 @@ updateMain msg model =
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    ( model, Browser.Navigation.pushUrl model.context.navKey (Url.toString url) )
+                    ( model, Navigation.pushUrl model.context.nav url )
 
                 Browser.External href ->
                     ( model, Browser.Navigation.load href )
@@ -154,7 +162,7 @@ updateMain msg model =
                 Cmd.none
 
               else
-                Browser.Navigation.load model.context.appPath
+                Navigation.top |> Navigation.loadPath model.context.nav
             )
 
         ReceivedWebSocketMessage endpoint payload ->

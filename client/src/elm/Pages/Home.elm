@@ -102,6 +102,6 @@ viewButtonColumn : Context -> Navigation.Path -> String -> Html msg
 viewButtonColumn context path text =
     H.div
         [ HA.class "column is-one-third-tablet is-one-quarter-desktop is-one-fifth-widescreen" ]
-        [ H.a [ HA.class "button is-large is-info is-fullwidth", Navigation.href context path ]
+        [ H.a [ HA.class "button is-large is-info is-fullwidth", Navigation.href context.nav path ]
             [ H.text text ]
         ]

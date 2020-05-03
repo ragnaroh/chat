@@ -1,5 +1,7 @@
 module Api exposing
-    ( Endpoint
+    ( Context
+    , Endpoint
+    , context
     , createRoom
     , enterRoom
     , getRoomName
@@ -8,11 +10,19 @@ module Api exposing
     , tryEnterRoom
     )
 
-import Context exposing (Context)
 import Http
 import Json.Decode as JD
 import Json.Encode as JE
 import Pages.Room.Common exposing (RoomId(..))
+
+
+type Context
+    = Context String
+
+
+context : String -> Context
+context apiPath =
+    Context apiPath
 
 
 
@@ -60,9 +70,9 @@ request :
     , decoder : JD.Decoder a
     }
     -> Cmd msg
-request { endpoint, context, msg, decoder } =
-    case endpoint of
-        Get path ->
+request options =
+    case ( options.endpoint, options.context ) of
+        ( Get path, Context apiPath ) ->
             Http.request
                 { method = "GET"
                 , headers =
@@ -70,20 +80,20 @@ request { endpoint, context, msg, decoder } =
                     , Http.header "Pragma" "no-cache"
                     , Http.header "Expires" "Sat, 01 Jan 2000 00:00:00 GMT"
                     ]
-                , url = context.apiPath ++ path
+                , url = apiPath ++ path
                 , body = Http.emptyBody
-                , expect = Http.expectStringResponse msg (decode decoder)
+                , expect = Http.expectStringResponse options.msg (decode options.decoder)
                 , timeout = Nothing
                 , tracker = Nothing
                 }
 
-        Post path body ->
+        ( Post path body, Context apiPath ) ->
             Http.request
                 { method = "POST"
                 , headers = []
-                , url = context.apiPath ++ path
+                , url = apiPath ++ path
                 , body = body
-                , expect = Http.expectStringResponse msg (decode decoder)
+                , expect = Http.expectStringResponse options.msg (decode options.decoder)
                 , timeout = Nothing
                 , tracker = Nothing
                 }

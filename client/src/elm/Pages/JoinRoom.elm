@@ -59,7 +59,7 @@ fetchRoomsCmd : Context -> Cmd Msg
 fetchRoomsCmd context =
     Api.request
         { endpoint = Api.getRooms
-        , context = context
+        , context = context.api
         , msg = ReceiveRooms
         , decoder = JD.list roomDecoder
         }
@@ -175,7 +175,7 @@ viewRoomPanelBlocks context rooms =
 
 viewRoomPanelBlock : Context -> Room -> Html msg
 viewRoomPanelBlock context room =
-    H.a [ HA.class "panel-block", Navigation.room room.id |> Navigation.href context ]
+    H.a [ HA.class "panel-block", Navigation.room room.id |> Navigation.href context.nav ]
         [ H.div [ HA.class "column" ]
             [ H.span [ HA.class "is-pulled-left" ]
                 [ H.text room.name ]

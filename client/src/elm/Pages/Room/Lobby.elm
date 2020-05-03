@@ -87,7 +87,7 @@ enterRoomCmd : RoomId -> String -> Context -> Cmd Msg
 enterRoomCmd roomId username context =
     Api.request
         { endpoint = Api.enterRoom roomId username
-        , context = context
+        , context = context.api
         , msg = ReceiveEnterRoomResponse
         , decoder = JD.bool
         }

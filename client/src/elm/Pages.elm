@@ -12,6 +12,7 @@ module Pages exposing
 
 import Context exposing (Context)
 import Html as H exposing (Html)
+import Navigation
 import Pages.CreateRoom as CreateRoom
 import Pages.Home as Home
 import Pages.JoinRoom as JoinRoom
@@ -108,15 +109,7 @@ update msg model context =
 
 decodeUrl : Url -> Context -> Route
 decodeUrl url context =
-    let
-        parser =
-            (String.split "/" context.appPath
-                |> List.filter (not << String.isEmpty)
-                |> List.foldl (\s acc -> acc </> Url.Parser.s s) Url.Parser.top
-            )
-                </> urlParser
-    in
-    Url.Parser.parse parser url
+    Url.Parser.parse (Navigation.baseUrlParser context.nav </> urlParser) url
         |> Maybe.withDefault InvalidRoute
 
 

@@ -127,7 +127,7 @@ update msg model roomId context =
             ( model, Cmd.none )
 
         ReceiveQueueMessage (Ok LeaveRoomQueueMessage) ->
-            ( model, Navigation.home |> Navigation.pushUrl context )
+            ( model, Navigation.top |> Navigation.pushPath context.nav )
 
         ReceiveQueueMessage (Err _) ->
             ( model, Cmd.none )

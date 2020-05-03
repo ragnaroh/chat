@@ -77,7 +77,7 @@ update msg model context =
 
         ReceiveRegisterRoomResponse (Ok roomId) ->
             ( model
-            , Navigation.room roomId |> Navigation.pushUrl context
+            , Navigation.room roomId |> Navigation.pushPath context.nav
             )
 
         ReceiveRegisterRoomResponse (Err _) ->
@@ -88,7 +88,7 @@ createRoomCmd : String -> Context -> Cmd Msg
 createRoomCmd name context =
     Api.request
         { endpoint = Api.createRoom name
-        , context = context
+        , context = context.api
         , msg = ReceiveRegisterRoomResponse
         , decoder = JD.string |> JD.map RoomId
         }

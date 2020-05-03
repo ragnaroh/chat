@@ -69,7 +69,7 @@ fetchRoomNameCmd : RoomId -> Context -> Cmd Msg
 fetchRoomNameCmd roomId context =
     Api.request
         { endpoint = Api.getRoomName roomId
-        , context = context
+        , context = context.api
         , msg = ReceiveRoomName
         , decoder = JD.string |> JD.map RoomName
         }
@@ -79,7 +79,7 @@ tryEnterRoomCmd : RoomId -> Context -> Cmd Msg
 tryEnterRoomCmd roomId context =
     Api.request
         { endpoint = Api.tryEnterRoom roomId
-        , context = context
+        , context = context.api
         , msg = ReceiveEnterRoomResponse
         , decoder = JD.bool
         }
