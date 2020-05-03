@@ -1,6 +1,6 @@
 'use strict';
 
-import * as ws from './js/websockets.js';
+import * as ws from './ts/websockets.ts';
 import { Elm } from './elm/Main.elm';
 
 const appPath = '/chat';
@@ -25,11 +25,8 @@ function onWsMessage(endpoint, payload) {
     app.ports.webSocketMessageIn.send({ endpoint, payload });
 }
 
-function onWsError(errorEvent) {
-    if (errorEvent['type'] === 'close' && errorEvent['code'] === 1006) {
-        // Lost connection to server
-        app.ports.connectionStatusIn.send(false);
-    }
+function onWsClose() {
+    app.ports.connectionStatusIn.send(false);
 }
 
-ws.connect('/ws/stomp', onWsConnect, onWsMessage, onWsError);
+ws.connect('/ws/stomp', onWsConnect, onWsMessage, onWsClose);

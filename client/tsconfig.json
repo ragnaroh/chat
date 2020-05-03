@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "outDir": "./target/ts",
+    "noImplicitAny": true,
+    "allowJs": true,
+    "strictNullChecks": true
+  },
+  "include": [ "src/ts/**/*" ]
+}

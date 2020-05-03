@@ -12,7 +12,7 @@ module.exports = (env, argv) => {
    const mode = argv.mode || 'development';
    return {
        entry: {
-          app: [ './src/scss/main.scss', path.resolve(__dirname, './src/index.js') ]
+          app: [ './src/scss/main.scss', './src/index.js' ]
        },
        output: {
           path: path.resolve(__dirname, './build/'),
@@ -25,7 +25,7 @@ module.exports = (env, argv) => {
        module: {
           rules: [{
              test: /\.elm$/,
-             exclude: [/elm-stuff/, /node_modules/],
+             include: /src\/elm/,
              use: [
                 ... (mode === 'development') ? [{
                    loader: 'elm-hot-webpack-loader'
@@ -41,8 +41,19 @@ module.exports = (env, argv) => {
             }]
           },
           {
+             test: /\.ts$/,
+             use: {
+                loader: 'ts-loader',
+                options: {
+                   transpileOnly: true
+                }
+             },
+             include: /src\/ts/,
+          },
+          {
              test: /\.s[c|a]ss$/,
-             use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
+             use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
+             include: /src\/scss/
           },
           {
              test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
