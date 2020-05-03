@@ -8,7 +8,6 @@ module Pages.Room.Inside exposing
     )
 
 import Browser.Dom
-import Browser.Navigation
 import Context exposing (Context)
 import DateTime exposing (DateTime)
 import Dict exposing (Dict)
@@ -258,7 +257,7 @@ queueMessageDecoder =
 
 
 view : Model -> RoomName -> Context -> List (Html Msg)
-view model _ context =
+view model _ _ =
     [ H.div [ HA.style "height" "100%", HA.style "display" "flex" ]
         [ H.div
             [ HA.class "left-menu is-hidden-mobile"

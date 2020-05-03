@@ -12,7 +12,6 @@ module Pages.CreateRoom exposing
 
 import Api
 import Browser.Dom
-import Browser.Navigation
 import Context exposing (Context)
 import Form
 import Html as H exposing (Html)
