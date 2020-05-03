@@ -17,7 +17,7 @@ import Html.Attributes as HA
 import Http
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
-import Navigation
+import Nav
 import Pages.Room.Common exposing (RoomId(..))
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
@@ -175,7 +175,7 @@ viewRoomPanelBlocks context rooms =
 
 viewRoomPanelBlock : Context -> Room -> Html msg
 viewRoomPanelBlock context room =
-    H.a [ HA.class "panel-block", Navigation.room room.id |> Navigation.href context.nav ]
+    H.a [ HA.class "panel-block", Nav.room room.id |> Nav.href context.nav ]
         [ H.div [ HA.class "column" ]
             [ H.span [ HA.class "is-pulled-left" ]
                 [ H.text room.name ]

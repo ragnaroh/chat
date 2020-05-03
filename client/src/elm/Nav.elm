@@ -1,4 +1,4 @@
-module Navigation exposing
+module Nav exposing
     ( Context
     , Path
     , baseUrlParser

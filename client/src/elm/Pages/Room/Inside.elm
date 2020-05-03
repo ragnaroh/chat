@@ -20,7 +20,7 @@ import Html.Keyed
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
 import Json.Encode as JE
-import Navigation
+import Nav
 import Pages.Room.Common exposing (RoomId(..), RoomName(..), Username(..))
 import Ports
 import Task
@@ -127,7 +127,7 @@ update msg model roomId context =
             ( model, Cmd.none )
 
         ReceiveQueueMessage (Ok LeaveRoomQueueMessage) ->
-            ( model, Navigation.top |> Navigation.pushPath context.nav )
+            ( model, Nav.top |> Nav.pushPath context.nav )
 
         ReceiveQueueMessage (Err _) ->
             ( model, Cmd.none )

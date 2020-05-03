@@ -1,11 +1,10 @@
 module Context exposing (Context)
 
 import Api
-import Browser.Navigation
-import Navigation
+import Nav
 
 
 type alias Context =
-    { nav : Navigation.Context
+    { nav : Nav.Context
     , api : Api.Context
     }

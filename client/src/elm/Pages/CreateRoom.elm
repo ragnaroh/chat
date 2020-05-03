@@ -12,7 +12,7 @@ module Pages.CreateRoom exposing
 
 import Api
 import Browser.Dom
-import Browser.Navigation as Nav
+import Browser.Navigation
 import Context exposing (Context)
 import Form
 import Html as H exposing (Html)
@@ -20,7 +20,7 @@ import Html.Attributes as HA
 import Html.Events as HE
 import Http
 import Json.Decode as JD
-import Navigation
+import Nav
 import Pages.Room.Common exposing (RoomId(..))
 import Task
 import Url.Parser
@@ -77,7 +77,7 @@ update msg model context =
 
         ReceiveRegisterRoomResponse (Ok roomId) ->
             ( model
-            , Navigation.room roomId |> Navigation.pushPath context.nav
+            , Nav.room roomId |> Nav.pushPath context.nav
             )
 
         ReceiveRegisterRoomResponse (Err _) ->

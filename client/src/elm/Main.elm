@@ -7,7 +7,7 @@ import Context exposing (Context)
 import Html as H
 import Json.Decode as JD
 import Json.Decode.Pipeline as JDP
-import Navigation
+import Nav
 import Pages
 import Ports
 import Task
@@ -58,7 +58,7 @@ init flags url navKey =
         Ok { appPath, apiPath } ->
             let
                 navContext =
-                    Navigation.context appPath navKey
+                    Nav.context appPath navKey
 
                 apiContext =
                     Api.context apiPath
@@ -133,7 +133,7 @@ updateMain msg model =
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    ( model, Navigation.pushUrl model.context.nav url )
+                    ( model, Nav.pushUrl model.context.nav url )
 
                 Browser.External href ->
                     ( model, Browser.Navigation.load href )
@@ -162,7 +162,7 @@ updateMain msg model =
                 Cmd.none
 
               else
-                Navigation.top |> Navigation.loadPath model.context.nav
+                Nav.top |> Nav.loadPath model.context.nav
             )
 
         ReceivedWebSocketMessage endpoint payload ->
