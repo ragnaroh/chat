@@ -18,6 +18,7 @@ import Json.Decode as JD
 import Pages.Room.Common exposing (RoomId(..), RoomName(..), Username(..))
 import Pages.Room.Inside as Inside
 import Pages.Room.Lobby as Lobby
+import Task exposing (Task)
 import Url.Parser
 import WebSocketSub exposing (WebSocketSub)
 
@@ -29,20 +30,25 @@ type alias Model =
 
 
 type SubModel
-    = Initializing (Maybe RoomName) (Maybe Bool)
+    = Initializing
     | LobbyModel RoomName Lobby.Model
     | InsideModel RoomName Inside.Model
 
 
 type Msg
-    = LobbyMsg Lobby.Msg
+    = GotInitialData (Result Http.Error InitialData)
+    | LobbyMsg Lobby.Msg
     | InsideMsg Inside.Msg
-    | ReceiveRoomName (Result Http.Error RoomName)
-    | ReceiveEnterRoomResponse (Result Http.Error Bool)
 
 
 type alias Route =
     String
+
+
+type alias InitialData =
+    { roomName : RoomName
+    , entered : Bool
+    }
 
 
 
@@ -56,31 +62,29 @@ init route context =
             RoomId route
     in
     ( { roomId = roomId
-      , subModel = Initializing Nothing Nothing
+      , subModel = Initializing
       }
-    , Cmd.batch
-        [ fetchRoomNameCmd roomId context
-        , tryEnterRoomCmd roomId context
-        ]
+    , Task.map2 InitialData
+        (fetchRoomNameTask roomId context)
+        (tryEnterRoomTask roomId context)
+        |> Task.attempt GotInitialData
     )
 
 
-fetchRoomNameCmd : RoomId -> Context -> Cmd Msg
-fetchRoomNameCmd roomId context =
-    Api.request
+fetchRoomNameTask : RoomId -> Context -> Task Http.Error RoomName
+fetchRoomNameTask roomId context =
+    Api.task
         { endpoint = Api.getRoomName roomId
         , context = context.api
-        , msg = ReceiveRoomName
         , decoder = JD.string |> JD.map RoomName
         }
 
 
-tryEnterRoomCmd : RoomId -> Context -> Cmd Msg
-tryEnterRoomCmd roomId context =
-    Api.request
+tryEnterRoomTask : RoomId -> Context -> Task Http.Error Bool
+tryEnterRoomTask roomId context =
+    Api.task
         { endpoint = Api.tryEnterRoom roomId
         , context = context.api
-        , msg = ReceiveEnterRoomResponse
         , decoder = JD.bool
         }
 
@@ -107,31 +111,19 @@ update msg model context =
 updateSub : Msg -> SubModel -> RoomId -> Context -> ( SubModel, Cmd Msg )
 updateSub msg model roomId context =
     case ( msg, model ) of
-        ( ReceiveRoomName (Ok roomName), Initializing Nothing Nothing ) ->
-            ( Initializing (Just roomName) Nothing, Cmd.none )
+        ( GotInitialData (Ok { roomName, entered }), Initializing ) ->
+            if entered then
+                Inside.init
+                    |> Tuple.mapFirst (InsideModel roomName)
+                    |> Tuple.mapSecond (Cmd.map InsideMsg)
 
-        ( ReceiveRoomName (Ok roomName), Initializing Nothing (Just False) ) ->
-            Lobby.init
-                |> Tuple.mapFirst (LobbyModel roomName)
-                |> Tuple.mapSecond (Cmd.map LobbyMsg)
+            else
+                Lobby.init
+                    |> Tuple.mapFirst (LobbyModel roomName)
+                    |> Tuple.mapSecond (Cmd.map LobbyMsg)
 
-        ( ReceiveRoomName (Ok roomName), Initializing Nothing (Just True) ) ->
-            Inside.init
-                |> Tuple.mapFirst (InsideModel roomName)
-                |> Tuple.mapSecond (Cmd.map InsideMsg)
-
-        ( ReceiveEnterRoomResponse (Ok userExists), Initializing Nothing Nothing ) ->
-            ( Initializing Nothing (Just userExists), Cmd.none )
-
-        ( ReceiveEnterRoomResponse (Ok False), Initializing (Just roomName) Nothing ) ->
-            Lobby.init
-                |> Tuple.mapFirst (LobbyModel roomName)
-                |> Tuple.mapSecond (Cmd.map LobbyMsg)
-
-        ( ReceiveEnterRoomResponse (Ok True), Initializing (Just roomName) Nothing ) ->
-            Inside.init
-                |> Tuple.mapFirst (InsideModel roomName)
-                |> Tuple.mapSecond (Cmd.map InsideMsg)
+        ( GotInitialData (Err _), Initializing ) ->
+            ( model, Cmd.none )
 
         ( LobbyMsg subMsg, LobbyModel roomName subModel ) ->
             case Lobby.update subMsg subModel roomId context of
@@ -173,7 +165,7 @@ subscriptions _ _ =
 wsSubscriptions : Model -> Context -> WebSocketSub Msg
 wsSubscriptions model _ =
     case model.subModel of
-        Initializing _ _ ->
+        Initializing ->
             WebSocketSub.none
 
         LobbyModel _ _ ->
@@ -191,7 +183,7 @@ wsSubscriptions model _ =
 view : Model -> Context -> List (Html Msg)
 view model context =
     case model.subModel of
-        Initializing _ _ ->
+        Initializing ->
             []
 
         LobbyModel roomName subModel ->

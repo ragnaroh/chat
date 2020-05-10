@@ -7,6 +7,7 @@ module Api exposing
     , getRoomName
     , getRooms
     , request
+    , task
     , tryEnterRoom
     )
 
@@ -14,6 +15,7 @@ import Http
 import Json.Decode as JD
 import Json.Encode as JE
 import Pages.Room.Common exposing (RoomId(..))
+import Task exposing (Task)
 
 
 type Context
@@ -75,11 +77,7 @@ request options =
         ( Get path, Context apiPath ) ->
             Http.request
                 { method = "GET"
-                , headers =
-                    [ Http.header "Cache-Control" "no-cache"
-                    , Http.header "Pragma" "no-cache"
-                    , Http.header "Expires" "Sat, 01 Jan 2000 00:00:00 GMT"
-                    ]
+                , headers = getHeaders
                 , url = apiPath ++ path
                 , body = Http.emptyBody
                 , expect = Http.expectStringResponse options.msg (decode options.decoder)
@@ -97,6 +95,43 @@ request options =
                 , timeout = Nothing
                 , tracker = Nothing
                 }
+
+
+task :
+    { endpoint : Endpoint
+    , context : Context
+    , decoder : JD.Decoder a
+    }
+    -> Task Http.Error a
+task options =
+    case ( options.endpoint, options.context ) of
+        ( Get path, Context apiPath ) ->
+            Http.task
+                { method = "GET"
+                , headers = getHeaders
+                , url = apiPath ++ path
+                , body = Http.emptyBody
+                , resolver = Http.stringResolver (decode options.decoder)
+                , timeout = Nothing
+                }
+
+        ( Post path body, Context apiPath ) ->
+            Http.task
+                { method = "POST"
+                , headers = []
+                , url = apiPath ++ path
+                , body = body
+                , resolver = Http.stringResolver (decode options.decoder)
+                , timeout = Nothing
+                }
+
+
+getHeaders : List Http.Header
+getHeaders =
+    [ Http.header "Cache-Control" "no-cache"
+    , Http.header "Pragma" "no-cache"
+    , Http.header "Expires" "Sat, 01 Jan 2000 00:00:00 GMT"
+    ]
 
 
 decode : JD.Decoder a -> Http.Response String -> Result Http.Error a
